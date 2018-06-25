@@ -16,6 +16,7 @@ public class MSbutton extends AppCompatButton{
     public int value=0;
     public boolean reveal=false;
     public boolean flag=false;
+    public boolean can_mine=true;
 
 
 

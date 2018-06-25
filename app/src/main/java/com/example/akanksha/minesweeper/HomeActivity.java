@@ -45,7 +45,7 @@ public class HomeActivity extends AppCompatActivity {
         if(level.equals("Easy"))
         {
             //int size=5;
-            intent.putExtra("Level",5);
+            intent.putExtra("Level",8);
         }
         else if(level.equals("Medium"))
         {
@@ -55,7 +55,7 @@ public class HomeActivity extends AppCompatActivity {
         else if(level.equals("Difficult"))
         {
             //int size=5;
-            intent.putExtra("Level",15);
+            intent.putExtra("Level",13);
         }
 
         Toast.makeText(this,"button",Toast.LENGTH_LONG).show();

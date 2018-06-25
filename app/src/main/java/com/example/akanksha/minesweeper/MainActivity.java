@@ -3,9 +3,12 @@ package com.example.akanksha.minesweeper;
 import android.content.Intent;
 import android.graphics.ImageDecoder;
 import android.media.Image;
+import android.os.CountDownTimer;
+import android.os.Handler;
 import android.provider.ContactsContract;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -30,7 +33,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     int[] one = {-1, -1, -1, 0, 0, 1, 1, 1};
     int[] two = {-1, 0, 1, -1, 1, -1, 0, 1};
-    boolean mineset = false;
+
+
+    public static final int INCOMPLETE = 0;
+    public static final int WON = 1;
+    public  static final int LOST=-1;
+    ImageButton img;
+    public int tsize;
+    boolean mineset;
+    long timeleftinmillisec = 600000;
+    CountDownTimer timer;
+    boolean timerunning;
+    TextView textView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,46 +58,66 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     public void setupBoard() {
 
-        Intent intent=getIntent();
-        String name=intent.getStringExtra("Name");
-        int level=intent.getIntExtra("Level",0);
+        mineset=false;
+        currentstatus=INCOMPLETE;
+        Intent intent = getIntent();
+        String name = intent.getStringExtra("Name");
+        int level = intent.getIntExtra("Level", 0);
 
-        size=level;
+        if (level == 8)
+            tsize = 30;
+        else if (level == 10)
+            tsize = 20;
+        else if (level == 13)
+            tsize = 11;
+
+        size = level;
 
         board = new MSbutton[size][size];
         rows = new ArrayList<>();
 
         rootLayout.removeAllViews();
 
-        LinearLayout l=new LinearLayout(this);
-        LinearLayout.LayoutParams Params=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,0,1);
+        LinearLayout l = new LinearLayout(this);
+        LinearLayout.LayoutParams Params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1);
 
         l.setLayoutParams(Params);
         rootLayout.addView(l);
 
-        TextView text=new TextView(this);
-        LinearLayout.LayoutParams Param=new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.MATCH_PARENT,3);
+        TextView text = new TextView(this);
+        LinearLayout.LayoutParams Param = new LinearLayout.LayoutParams(0, 120,1);
         text.setLayoutParams(Param);
         text.setText(name);
-        text.setTextSize(30);
+        text.setTextSize(20);
         text.setTextColor(this.getResources().getColor(R.color.colorPrimaryDark));
         l.addView(text);
 
-        //Button b =new Button(this);
-        ImageButton img = new ImageButton(this);
-        LinearLayout.LayoutParams Parameter=new LinearLayout.LayoutParams(30,ViewGroup.LayoutParams.MATCH_PARENT,1);
+        // btn =new Button(this);
+        img = new ImageButton(this);
+        LinearLayout.LayoutParams Parameter = new LinearLayout.LayoutParams(0, 150,1);
         img.setLayoutParams(Parameter);
         l.addView(img);
-        img.setImageResource(R.drawable.smile);
-        img.setOnClickListener(this);
+        img.setBackground(this.getResources().getDrawable(R.drawable.smilee));
+        //img.setImageResource(R.drawable.smile);
 
         img.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //Toast.makeText(getApplicationContext(),"Home Button",Toast.LENGTH_LONG).show();
+                // Do something
+                stoptimer();
                 setupBoard();
             }
         });
+
+
+        textView = new TextView(this);
+        LinearLayout.LayoutParams Par = new LinearLayout.LayoutParams(0, 120,1);
+
+        textView.setLayoutParams(Par);
+        textView.setGravity(Gravity.END);
+        l.addView(textView);
+        textView.setTextSize(30);
+
 
         for (int i = 0; i < size; i++) {
             LinearLayout linearLayout = new LinearLayout(this);
@@ -102,8 +136,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 MSbutton b = new MSbutton(this);
                 LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1);
+                layoutParams.rightMargin = -8;
+                layoutParams.leftMargin = -8;
+                layoutParams.topMargin = -12;
+                layoutParams.bottomMargin = -12;
                 b.setLayoutParams(layoutParams);
-
                 b.setOnClickListener(this);
                 b.setOnLongClickListener(this);
 
@@ -121,29 +158,89 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
+
+
+    public void startstop() {
+
+        if (timerunning)
+            stoptimer();
+        else
+            starttimer();
+    }
+
+    public void starttimer() {
+
+        timer = new CountDownTimer(timeleftinmillisec, 1000) {
+
+            @Override
+            public void onTick(long l) {
+
+                timeleftinmillisec = l;
+                updateTimer();
+            }
+
+            public void onFinish() {
+
+
+            }
+
+
+        }.start();
+
+
+        timerunning = true;
+    }
+
+
+
+
+   public  void stoptimer() {
+
+        timer.cancel();
+        timeleftinmillisec=600000;
+        timerunning=false;
+
+
+   }
+
+   public void updateTimer()
+   {
+       int min= (int) timeleftinmillisec/60000;
+       int sec=(int) timeleftinmillisec%60000/1000;
+
+       String timeleft;
+       timeleft=""+min;
+       timeleft+=":";
+       if(sec<10)
+           timeleft+="O";
+       timeleft+=sec;
+       textView.setText(timeleft);
+
+
+   }
     public void onClick(View v) {
 
+         if(currentstatus==INCOMPLETE) {
 
-        Toast.makeText(this,"Button Clicked",Toast.LENGTH_SHORT).show();
+             MSbutton button = (MSbutton) v;
+             int r = button.getRow();
+             int c = button.getCol();
 
-        MSbutton button = (MSbutton) v;
-        int r = button.getRow();
-        int c = button.getCol();
+             if (!mineset) {
+                 mineset = true;
+                 setmines(r, c);
+                 startstop();
 
-        if (!mineset) {
-            mineset = true;
-            setmines(r, c);
+                 //revealall();
 
-            //revealall();
+             }
 
-        }
-
-        //button.setOnLongClickListener(new View.OnLongClickListener() {
-
-
-
-            uncover1(r, c);
-
+             //button.setOnLongClickListener(new View.OnLongClickListener();
+             button.reveal=true;
+             button.setEnabled(false);
+             uncover1(r, c);
+             checkGameStatus();
+         }
 
     }
 
@@ -154,9 +251,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
            if(currentstatus == INCOMPLETE) {
                Toast.makeText(MainActivity.this, "Long Clicked", Toast.LENGTH_LONG).show();
                MSbutton button = (MSbutton) v;
-               button.setText("F");
+               //button.setText("F");
+               button.setBackground(this.getResources().getDrawable(R.drawable.flag));
                button.flag=true;
-               button.setEnabled(false);
 
                return true;
            }
@@ -165,40 +262,41 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
     public void setmines(int currrow, int currcol)
-
     {
-
         Random rand = new Random();
         int minerow, minecol;
-        int noofmines=size+2;
+        int noofmines=size+4;
         int count=0;
 
          //Setting Of Mines
-        while(count<noofmines) {
+        for (int j = 0; j < 8; j++) {
+            int a = currrow + one[j];
+            int b = currcol + two[j];
+            if (a >= 0 && a < size && b >= 0 && b < size) {
+                MSbutton butn = board[a][b];
+                butn.can_mine = false;
+
+            }
+
+        }
+
+          while(count<noofmines) {
 
             minerow = rand.nextInt(size - 1);
             minecol = rand.nextInt(size - 1);
 
             if (minerow != currrow || minecol != currcol) {
 
-                for (int j = 0; j < 8; j++) {
-                    int a = currrow + one[j];
-                    int b = currcol + two[j];
-                    if (a != minerow && b != minecol) {
-
                         MSbutton button = board[minerow][minecol];
-                        if (!button.hasMine()) {
+                        if (!button.hasMine() && button.can_mine == true) {
 
                             count++;
                             button.setValue(-1);
                         }
-
-
-                    }
                 }
 
             }
-        }
+
 
         Toast.makeText(this, "Mines are set", Toast.LENGTH_LONG).show();
         //Iterate Over Neighbours
@@ -235,19 +333,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     }
 
-
-      /* public boolean hasmine(int i,int j)
-        {
-            if (board[i][j]==-1)
-            {
-                return true;
-            }
-
-            else
-
-                return false;
-        }*/
-
     public void revealall()
     {
         for(int i=0;i<size;i++){
@@ -257,8 +342,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
 
-
-
     }
 
       public void uncover1 ( int rowclick, int colclick)
@@ -267,25 +350,40 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             if (b.value == -1)
             {
-                b.setText("M");
-                b.setBackgroundColor(this.getResources().getColor(R.color.black));
-                Toast.makeText(this,"Game over",Toast.LENGTH_LONG).show();
+                //b.setText("*");
+                b.setBackground(this.getResources().getDrawable(R.drawable.mine3));
+                // b.setTextColor(this.getResources().getColor(R.color.black));
+                allMines();
+                currentstatus=LOST;
+                Toast.makeText(this,"OOps!!! Game over",Toast.LENGTH_LONG).show();
+
             }
             else if(b.value > 0)
             {
-                b.reveal=true;
+                //b.reveal=true;
                 if(b.value == 1)
-                b.setBackgroundColor(this.getResources().getColor(R.color.colorAccent));
+                b.setTextColor(this.getResources().getColor(R.color.blue));
                 else if(b.value == 2)
-                    b.setBackgroundColor(this.getResources().getColor(R.color.blue));
+                    b.setTextColor(this.getResources().getColor(R.color.green));
                 else if(b.value == 3)
-                    b.setBackgroundColor(this.getResources().getColor(R.color.purple));
+                    b.setTextColor(this.getResources().getColor(R.color.red));
+                else if(b.value == 4)
+                    b.setTextColor(this.getResources().getColor(R.color.purple));
+                else if(b.value == 5)
+                    b.setTextColor(this.getResources().getColor(R.color.orange));
+
+                b.setBackgroundColor(this.getResources().getColor(R.color.light));
                 b.setText(String.valueOf(b.value));
+                b.setTextSize(tsize);
+                //b.setEnabled(false);
             }
 
             else if(b.value==0){
+                //b.reveal=true;
+                //b.setEnabled(false);
+                b.setText("");
+                b.setBackgroundColor(this.getResources().getColor(R.color.light));
 
-                b.setBackgroundColor(this.getResources().getColor(R.color.green));
                 Toast.makeText(this,"Blank Button Clicked",Toast.LENGTH_SHORT).show();
                 for(int i=0;i<8;i++)
                 {
@@ -293,7 +391,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     {
                         MSbutton button =board[rowclick+one[i]][colclick+two[i]];
 
-                        if(button.value != -1 && button.reveal==false)
+                        if(button.value != -1 && button.reveal==false && button.flag==false)
 
                             uncover2(rowclick+one[i],colclick+two[i]);
 
@@ -309,95 +407,171 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             MSbutton b = board[rowclick][colclick];
 
+               if(b.reveal == false && b.flag == false) {
+                   if (b.value > 0) {
+                       b.reveal = true;
+                       b.setEnabled(false);
+                       b.setText(String.valueOf(b.value));
+                       b.setTextSize(tsize);
+                       b.setBackgroundColor(this.getResources().getColor(R.color.light));
 
-                if (b.value > 0 && b.reveal == false) {
-                    b.reveal = true;
-                    if(b.value == 1)
-                        b.setBackgroundColor(this.getResources().getColor(R.color.colorAccent));
-                    else if(b.value == 2)
-                        b.setBackgroundColor(this.getResources().getColor(R.color.blue));
-                    else if(b.value == 3)
-                        b.setBackgroundColor(this.getResources().getColor(R.color.purple));
-                    b.setText(String.valueOf(b.value));
-                    return;
+                      if (b.value == 1)
+                           b.setTextColor(this.getResources().getColor(R.color.blue));
+                       else if (b.value == 2)
+                           b.setTextColor(this.getResources().getColor(R.color.green));
+                      else if(b.value == 3)
+                          b.setTextColor(this.getResources().getColor(R.color.red));
+                      else if(b.value == 4)
+                          b.setTextColor(this.getResources().getColor(R.color.purple));
+                      else if(b.value == 5)
+                          b.setTextColor(this.getResources().getColor(R.color.orange));
 
-                }
-                // when value =0
 
-                else
-                {
-                    for(int i=0;i<8;i++)
-                    {
-                        if(rowclick+one[i]>=0 && rowclick+one[i]<size && colclick+two[i]>=0 && colclick+two[i]<size)
-                        {
-                            MSbutton button =board[rowclick+one[i]][colclick+two[i]];
+                       return;
 
-                            if(button.value != -1 && button.reveal==false)
+                   }
+                   // when value =0
 
-                                uncover3(rowclick+one[i],colclick+two[i]);
+                   else {
+                       b.reveal=true;
+                       b.setEnabled(false);
+                       b.setBackgroundColor(this.getResources().getColor(R.color.light));
+                       b.setText("");
 
-                        }
-                    }
-                }
+                       for (int i = 0; i < 8; i++) {
+                           if (rowclick + one[i] >= 0 && rowclick + one[i] < size && colclick + two[i] >= 0 && colclick + two[i] < size) {
+                               MSbutton button = board[rowclick + one[i]][colclick + two[i]];
+
+                               if (button.value != -1 && button.reveal == false && button.flag == false)
+
+                                   uncover2(rowclick + one[i], colclick + two[i]);
+
+                           }
+                       }
+                   }
+
+               }
 
         }
 
-
-        public void uncover3(int rowclick,int colclick)
+        public void checkGameStatus()
         {
-            MSbutton b = board[rowclick][colclick];
+            if(textView.getText().toString().equals("0:00")){
 
-
-            if (b.value > 0 && b.reveal == false) {
-                b.reveal = true;
-                if(b.value == 1)
-                    b.setBackgroundColor(this.getResources().getColor(R.color.colorAccent));
-                else if(b.value == 2)
-                    b.setBackgroundColor(this.getResources().getColor(R.color.blue));
-                else if(b.value == 3)
-                    b.setBackgroundColor(this.getResources().getColor(R.color.purple));
-                b.setText(String.valueOf(b.value));
+                Toast.makeText(this,"Time Over!!!",Toast.LENGTH_LONG).show();
+                stoptimer();
+                disableall();
                 return;
 
             }
-            // when value =0
 
-            else
+            else if(currentstatus == LOST)
             {
-                for(int i=0;i<8;i++)
-                {
-                    if(rowclick+one[i]>=0 && rowclick+one[i]<size && colclick+two[i]>=0 && colclick+two[i]<size)
-                    {
-                        MSbutton button =board[rowclick+one[i]][colclick+two[i]];
-
-                        if(button.value != -1 && button.reveal==false)
-
-                            uncover4(rowclick+one[i],colclick+two[i]);
-
-                    }
-                }
-            }
-
-        }
-
-        public void uncover4(int rowclick,int colclick)
-        {
-            MSbutton b = board[rowclick][colclick];
-
-
-            if (b.value > 0 && b.reveal == false) {
-                b.reveal = true;
-                if(b.value == 1)
-                    b.setBackgroundColor(this.getResources().getColor(R.color.colorAccent));
-                else if(b.value == 2)
-                    b.setBackgroundColor(this.getResources().getColor(R.color.blue));
-                else if(b.value == 3)
-                    b.setBackgroundColor(this.getResources().getColor(R.color.purple));
-                b.setText(String.valueOf(b.value));
+                stoptimer();
                 return;
 
             }
+
+
+            MSbutton b;
+            for(int i=0;i<size;i++) {
+                for (int j = 0; j < size; j++) {
+                    b = board[i][j];
+                    if (b.value != -1 || b.flag == false) {
+                        if (b.reveal == false)
+                            return;
+
+                    }
+
+                }
+            }
+
+            currentstatus=WON;
+            stoptimer();
+            Toast.makeText(this, "Yahoo U Won!!", Toast.LENGTH_LONG).show();
+            return;
+
         }
+
+        public void disableall() {
+
+            MSbutton b;
+            for (int i = 0; i < size; i++) {
+                for (int j = 0; j < size; j++) {
+
+                    b = board[i][j];
+                    if(b.isEnabled())
+                        b.setEnabled(false);
+
+
+                }
+            }
+        }
+
+
+        public void allMines()
+            {
+                img.setBackground(this.getResources().getDrawable(R.drawable.sad));
+                MSbutton butn;
+                for(int i=0;i<size;i++)
+                {
+                    for(int j=0;j<size;j++)
+                    {
+                        butn=board[i][j];
+                        if(butn.isEnabled())
+                        butn.setEnabled(false);
+                        if(butn.value == -1)
+                        {
+                            butn.setBackground(this.getResources().getDrawable(R.drawable.mine3));
+                        }
+
+                    }
+
+
+                }
+
+            }
+
+  /*  private Handler timer = new Handler();
+    private int secondsPassed = 0;
+    public void startTimer()
+    {
+        if (secondsPassed == 0)
+        {
+            timer.removeCallbacks(updateTimeElasped);
+            // tell timer to run call back after 1 second
+            timer.postDelayed(updateTimeElasped, 1000);
+        }
+    }
+
+    public void stopTimer()
+    {
+        // disable call backs
+        timer.removeCallbacks(updateTimeElasped);
+    }
+
+    // timer call back when timer is ticked
+    private Runnable updateTimeElasped = new Runnable()
+    {
+        public void run()
+        {
+
+            long currentMilliseconds = System.currentTimeMillis();
+            ++secondsPassed;
+            //TextView et = (TextView) l.findViewById(R.id.10);
+            textView.setText(Integer.toString(secondsPassed));
+
+            // add notification
+            timer.postAtTime(this, currentMilliseconds);
+            // notify to call back after 1 seconds
+            // basically to remain in the timer loop
+            timer.postDelayed(updateTimeElasped, 1000);
+        }
+    }; */
+
+
+
+
 
 
 }
